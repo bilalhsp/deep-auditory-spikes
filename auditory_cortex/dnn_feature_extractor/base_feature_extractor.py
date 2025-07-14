@@ -55,10 +55,8 @@ class BaseFeatureExtractor(ABC):
         self.features = {}
         self.register_hooks()
         
-
         if self.shuffled:
-            self.shuffle_weights()
-            # layers = self.reset_model_parameters()
+            layers = self.reset_model_parameters()
 
 
     @abstractmethod
