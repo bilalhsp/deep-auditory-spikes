@@ -5,15 +5,14 @@ import matplotlib.pyplot as plt
 
 import auditory_cortex.utils as utils
 from auditory_cortex import results_dir
-# from auditory_cortex.models import Regression
+
 from auditory_cortex.analyses import Correlations, STRFCorrelations
 from auditory_cortex.encoding import TRF
 from auditory_cortex.dataloader import DataLoader
-from auditory_cortex.data_assembler import STRFDataAssembler, DNNDataAssembler
-from auditory_cortex.neural_data import create_neural_dataset, create_neural_metadata
+from auditory_cortex.data_assembler import DNNDataAssembler
+from auditory_cortex.neural_data import create_neural_dataset
 from auditory_cortex.dnn_feature_extractor import create_feature_extractor
 
-# from auditory_cortex.datasets import BaselineDataset, DNNDataset
 from auditory_cortex.plotters.plotter_utils import PlotterUtils
 from auditory_cortex.plotters.coordinates_plotter import CoordinatesPlotter
 from auditory_cortex.plotters.correlation_plotter import RegPlotter
@@ -21,61 +20,6 @@ from auditory_cortex.io_utils.io import read_WER
 
 import logging
 logger = logging.getLogger(__name__)
-
-
-# ------------------  WER vs Neural prectibility ----------------#
-
-# # # peak across all bin widths,
-# trained_median_peaks_50ms = {
-#     # peak correlation at bin width=50ms
-#     'wav2letter_modified': 0.527,  # layer-ID: 4
-#     'wav2vec2': 0.597,             # layer-ID: 9
-#     'speech2text': 0.597,           # layer-ID: 8
-#     'whisper_tiny': 0.611,          # layer-ID: 2
-#     'whisper_base': 0.625,          # layer-ID: 2
-#     'deepspeech2': 0.588,            # layer-ID: 2  
-# }
-# # Using different inclusion criteria....Need to automate thiss....
-# trained_median_peaks_50ms = {
-#     # peak correlation at bin width=50ms
-#     'wav2letter_modified': 0.480,  # layer-ID: 4
-#     'wav2vec2': 0.571,             # layer-ID: 9
-#     'speech2text': 0.560,           # layer-ID: 8
-#     'whisper_tiny': 0.597,          # layer-ID: 2
-#     'whisper_base': 0.589,          # layer-ID: 2
-#     'deepspeech2': 0.529,            # layer-ID: 2 
-# }
-# #     # 'wav2letter_modified': 0.500,  # peak at 60 ms, layer-ID: 4
-# #     # 'wav2vec2': 0.584,             # peak at 40 ms, layer-ID: 8
-# #     # 'speech2text': 0.583,           # peak at 60 ms, layer-ID: 5
-# #     # 'whisper_tiny': 0.598,          # peak at 60 ms, layer-ID: 2
-# #     # 'whisper_base': 0.599,          # peak at 40 ms, layer-ID: 2
-# #     # 'deepspeech2': 0.583,           # peak at 100 ms, layer-ID: 2   
-# # }
-
-
-# # read off of the line plots..
-# trained_median_peaks_20ms = {
-#     'wav2letter_modified': 0.503,  # layer-ID: 8
-#     'wav2vec2': 0.597,             # layer-ID: 7
-#     'speech2text': 0.574,           # layer-ID: 7
-#     'whisper_tiny': 0.600,          # layer-ID: 2
-#     'whisper_base': 0.610,          # layer-ID: 2
-#     'deepspeech2': 0.551,            # layer-ID: 2   
-# }
-# untrained_median_peaks = {
-#     'wav2letter_modified': 0.24,  # layer-ID: 0
-#     'wav2vec2': 0.356,             # layer-ID: 18
-#     'speech2text': 0.530,           # layer-ID: 10
-#     'whisper_tiny': 0.506,          # layer-ID: 1
-#     'whisper_base': 0.507,          # layer-ID: 2
-#     'deepspeech2': 0.534,            # layer-ID: 2   
-# }
-
-# trained_median_peaks = {
-#     '20ms': trained_median_peaks_20ms,
-#     '50ms': trained_median_peaks_50ms,
-# }
 
 def scatter_WER_v_corr(
         save_tikz=True,
@@ -436,8 +380,6 @@ def plot_best_layer_across_all_bin_widths(
                 p_threshold=p_threshold,
                 offset_y=offset_y,
             )
-            # RegPlotter.indicate_peak_and_similar_layers(
-            # data_dist, p_threshold=p_threshold, offset_y=offset_y)
 
 
 # ------------------  Fig: Trained networks (best layer) at each bin width  ----------------#
@@ -477,8 +419,6 @@ def plot_best_layer_across_all_bin_widths_using_super_set(
                 display_inter_quartile_range=display_inter_quartile_range,
                 display_dotted_lines=display_dotted_lines,
             )
-
-
 
 # ------------------  Fig: spectrogram + spikes_counts + session coordinates ----------------#
 
@@ -678,8 +618,6 @@ def plot_spectrogram_spike_count_pair(
 
     return saved_predictions, all_trials_spike_counts
 
-
-
 def plot_spike_counts(
         bin_width,
         ch,
@@ -718,8 +656,6 @@ def plot_spike_counts(
                 ax.plot(predictions[:,ch].squeeze(), color=color)
             except:
                 continue
-    
-        
 
     # setting xlim..
     total_bins = all_trials.shape[1]
@@ -784,10 +720,6 @@ def get_peak_dist_diff_trained_and_untrained(
         distributions = list([dist[key] for dist in data_dist_shuffled_list])
         data_dist_shuffled[key] = np.stack(distributions, axis=0)
         data_dist_shuffled[key] = np.mean(data_dist_shuffled[key], axis=0)
-    
-    # peak_dist_trained = PlotterUtils.get_dist_with_peak_median(data_dist_trained)   
-    # peak_dist_shuffled = PlotterUtils.get_dist_with_peak_median(data_dist_shuffled)
-    # dist_diff = peak_dist_trained - peak_dist_shuffled
 
     # using max corr (across all layer) for each neuron
     all_layers_trained = np.stack(list(data_dist_trained.values()))
@@ -836,10 +768,6 @@ def plot_diff_of_peak_dist_core_vs_non_primary(
         )
         ax.set_title(model_name)
         ax.set_ylim([-0.3, 0.7])
-        # pvalue = scipy.stats.ttest_ind(
-        # 	distributions['non-primary'], distributions['core'], 
-        # 	equal_var=False, alternative='greater'
-        # 	).pvalue
         pvalue = scipy.stats.mannwhitneyu(
             distributions['non-primary'], distributions['core'], 
             alternative='greater',
@@ -856,12 +784,6 @@ def plot_diff_of_peak_dist_core_vs_non_primary(
                 f"training-gain-core-v-others-{bin_width}ms-{model_name}.tex"
                 )
             PlotterUtils.save_tikz(filepath)
-
-
-
-
-
-
 
 # ------------------  Supp. Fig: Wav2letter_spect corr plot for RFs and num_units ----------------#
 def plot_layerwise_correlations_at_num_units_and_rfs(
@@ -920,11 +842,6 @@ def plot_layerwise_correlations_at_num_units_and_rfs(
                 )
                 PlotterUtils.save_tikz(filepath)
 
-
-
-
-# ------------------  Fig: Area wise hierarchy ----------------#
-
 # ------------------  Fig: Area wise hierarchy ----------------#
 def plot_peak_layer_scatter_plots(
     model_names,
@@ -959,10 +876,7 @@ def plot_peak_layer_scatter_plots(
         x_err.append(np.std(peak_layers['core']))
         y_err.append(np.std(peak_layers['non-primary']))
         logger.info(f"model_name: {model_name}, core: {peak_layers_core[-1]}, non-primary: {peak_layers_np[-1]}")
-        # ax.scatter(peak_layers_core[-1], peak_layers_np[-1], color=colors[-1])
-
     ax.scatter(peak_layers_core, peak_layers_np, facecolors=colors)
-    # ax.errorbar(peak_layers_core, peak_layers_np, xerr=x_err, yerr=y_err, fmt='o', color='k')
     ax.set_xlim([0,1])
     ax.set_ylim([0,1])
     ax.plot([0, 1], [0, 1], color='k', linestyle='--')
@@ -1012,9 +926,7 @@ def plot_peak_layer_histograms(
                 results_dir,
                 'tikz_plots',
                 f"gap-{map_gap_to_string(threshold)}-peak-layer-histogram-{tikz_indicator}-{stim}-{bin_width}ms-{model_name}.png" 
-                # f"peak-layer-histogram-{stim}-{bin_width}ms-{model_name}.tex"
                 )
-            # PlotterUtils.save_tikz(filepath)
             plt.savefig(filepath, bbox_inches='tight')
             logger.info(f"Saved: {filepath}")
             
@@ -1059,12 +971,7 @@ def plot_peak_layer_histograms_all_models(
         peak_layers, 'all_models', ax=None, density=False, figsize=figsize, fontsize=fontsize,
         right_label=right_label
         )
-    # statistical significance test...for core < non-primary
-    # _, pvalue = scipy.stats.mannwhitneyu(dist_core, dist_non_primary, alternative='less')
-    
-    # sig = '***' if pvalue < 0.001 else '**' if pvalue < 0.01 else '*' if pvalue < 0.05 else ''
-    # title = f'p-value: {pvalue:.3f}, {sig}'
-    # ax.set_title(title)
+
     if save_tikz:
         def map_gap_to_string(x):
             return str(round(float(x), 1))
@@ -1078,12 +985,9 @@ def plot_peak_layer_histograms_all_models(
             f"gap-{map_gap_to_string(threshold)}-peak-layer-histogram-{tikz_indicator}-{stim}-{bin_width}ms-all-models.png" 
             # f"peak-layer-histogram-{stim}-{bin_width}ms-{model_name}.tex"
             )
-        # PlotterUtils.save_tikz(filepath)
+
         plt.savefig(filepath, bbox_inches='tight')
         logger.info(f"Saved: {filepath}")
-            
-    
-    # plt.suptitle(f"Threshold: {threshold}, number of channels: {number_of_channels}")
 
 
 
