@@ -15,7 +15,7 @@ cache_dir = Path(config['cache_dir'])
 
 CACHE_DIR = cache_dir
 normalizers_dir = cache_dir / 'normalizers'
-saved_corr_dir = results_dir / 'cross_validated_correlations' #'ahmed-25' # 
+saved_corr_dir = results_dir / 'ahmed-25' 
 opt_inputs_dir = results_dir / 'optimal_inputs'
 aux_dir = root_dir / 'dnn_feature_extractor' /'auxilliary' 
 

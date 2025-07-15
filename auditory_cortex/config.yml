@@ -1,9 +1,8 @@
-
 # paths to the data and results directories
-neural_data_dir: /scratch/gilbreth/ahmedb/auditory_cortex/
-pretrained_models_dir: /depot/jgmakin/data/auditory_cortex/results/pretrained_weights/
-results_dir: /depot/jgmakin/data/auditory_cortex/results/
-cache_dir: /scratch/gilbreth/ahmedb/cache
+neural_data_dir: /path/to/neural_data/
+pretrained_models_dir: /path/to/pretrained_models/
+results_dir: /path/to/save/results/
+cache_dir: /path/to/feature/cache/
 
 neural_datasets:
 - 'ucsf'
