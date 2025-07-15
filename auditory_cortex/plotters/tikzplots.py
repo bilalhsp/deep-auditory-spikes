@@ -8,7 +8,7 @@ from auditory_cortex import results_dir
 # from auditory_cortex.models import Regression
 from auditory_cortex.analyses import Correlations, STRFCorrelations
 from auditory_cortex.encoding import TRF
-from auditory_cortex.dataloader2 import DataLoader
+from auditory_cortex.dataloader import DataLoader
 from auditory_cortex.data_assembler import STRFDataAssembler, DNNDataAssembler
 from auditory_cortex.neural_data import create_neural_dataset, create_neural_metadata
 from auditory_cortex.dnn_feature_extractor import create_feature_extractor
@@ -482,7 +482,7 @@ def plot_best_layer_across_all_bin_widths_using_super_set(
 
 # ------------------  Fig: spectrogram + spikes_counts + session coordinates ----------------#
 
-def plot_spectrogram_spikes_counts_and_session_coordinates(
+def plot_spectrogram_spikes_counts(
         model_names: list = None,
         sent_ids: list = None,
         sessions: list = None,
@@ -518,8 +518,6 @@ def plot_spectrogram_spikes_counts_and_session_coordinates(
         sessions = [200206, 180731]     #180807, ch-1
     if chs is None:
         chs = [32, 7]
-
-    highlight_sessions = {}
     for i, model_name in enumerate(model_names):
         # saving spectograms and spikes counts (both actual & predicted) 
         plot_spectrogram_spike_count_pair(
@@ -536,8 +534,16 @@ def plot_spectrogram_spikes_counts_and_session_coordinates(
             save_tikz=save_tikz
         )
 
-        highlight_sessions[sessions[i]] = PlotterUtils.get_model_specific_color(model_name)
 
+
+        
+def plot_session_coordinates(highlight_sessions=None, save_tikz=True):
+    """Plots coordinates of all the sessions, and optionally highlights some sessions
+    Args:
+        highlight_sessions: dict = sessions to be highlighted, with 
+            corresponding color as value. e.g. {200206: orange}
+        save_tikz: bool = saves tikz file if True.
+    """
     # saving coordinate plots...
     coor_obj = CoordinatesPlotter()
     subjects = ['c_LH', 'c_RH', 'b_RH', 'f_RH']
@@ -548,10 +554,6 @@ def plot_spectrogram_spikes_counts_and_session_coordinates(
             save_tikz=save_tikz,
             highlight_sessions=highlight_sessions,
             )
-
-
-
-
 
 def plot_spectrogram_spike_count_pair(
         model_name,
@@ -607,19 +609,11 @@ def plot_spectrogram_spike_count_pair(
         aud = dataloader.get_stim_audio(stim_id=sent_id, mVocs=mVocs)
         spect = utils.SyntheticInputUtils.get_spectrogram(aud).cpu().numpy().transpose()
         fig, ax = plt.subplots()
-        PlotterUtils.plot_spectrogram(
-                spect,
-                # cmap='viridis'
-            )
+        PlotterUtils.plot_spectrogram(spect)
         if save_tikz:
             filepath = os.path.join(results_dir, 'tikz_plots', f"spectrogram_sent{sent_id}.tex")
             PlotterUtils.save_tikz(filepath)
 
-
-    # plotting individual trials, mean and predicted spike count...
-    # session = str(session)
-    # bin_width = 20
-    # sent_ids = [sent_id]
     mean_line_width = 2
     ind_trial_width = 1
     alpha = 0.3
@@ -631,11 +625,6 @@ def plot_spectrogram_spike_count_pair(
         [spikes[sent_id][ch] for ch in spikes[sent_id].keys()],
         axis=-1
         )
-    # # # getting all trials...
-    # all_trials_spike_counts = dataloader.get_neural_data_for_repeated_trials(
-    #         session, bin_width=bin_width,
-    #         stim_ids=sent_ids
-    #     )
 
     ### getting predictions using the model..
     if saved_predictions is None:
@@ -643,36 +632,20 @@ def plot_spectrogram_spike_count_pair(
 
     prediction_colors = {}
     if model_name not in saved_predictions.keys():
-        # layer = layers[model_name]
-        
-        # dataset_obj = create_neural_dataset('ucsf', session)
         feature_extractor = create_feature_extractor(model_name, shuffled=False)
         dataset = DNNDataAssembler(
             dataset_obj, feature_extractor, layer, bin_width=bin_width, mVocs=mVocs,
             )
         trf_obj = TRF(model_name, dataset)
-        # saved_predictions[model_name] = trf_obj.neural_prediction(
-        #         model_name, session, layer, bin_width, [sent_id], 'ucsf',
-        #         lag=200
-        #     )[0]
+
         saved_predictions = {}
         prediction_colors = {}
         trf_obj = TRF(model_name, dataset)
-
-        # corr, opt_lag, opt_lmbda, trf_model = trf_obj.grid_search_CV(
-        #         lags=[200], tmin=0,
-        #         num_folds=3,
-        #         # test_trial=test_trial
-        #     )
-
-        # X, _ = dataset.get_testing_data([sent_id])
-        # saved_predictions[model_name] = trf_model.predict(X)[0]
 
         saved_predictions[model_name] = trf_obj.neural_prediction(
                 model_name, session, layer, bin_width, [sent_id], 'ucsf',
                 lag=200
             )[0]
-
     
     if prediction_color is None:
         prediction_colors[model_name] = PlotterUtils.get_model_specific_color(model_name)
@@ -1000,24 +973,6 @@ def plot_peak_layer_scatter_plots(
     else:
         title = 'timit'
     ax.set_title(title)
-        # RegPlotter.plot_overlapping_histograms(
-        # 	peak_layers, model_name, ax=None, density=False, figsize=figsize, fontsize=fontsize,
-        # 	all_models=False
-        # 	)
-        # if save_tikz:
-        # 	if mVocs:
-        # 		stim='mVocs'
-        # 	else:
-        # 		stim='timit'
-        # 	filepath = os.path.join(
-        # 		results_dir,
-        # 		'tikz_plots',
-        # 		f"peak-layer-histogram-{stim}-{bin_width}ms-{model_name}.png" 
-        # 		# f"peak-layer-histogram-{stim}-{bin_width}ms-{model_name}.tex"
-        # 		)
-        # 	# PlotterUtils.save_tikz(filepath)
-        # 	plt.savefig(filepath, bbox_inches='tight')
-        # 	print(f"Saved: {filepath}")
 
 
 
@@ -1177,12 +1132,6 @@ def plot_correlations_summary(
                 untrained_dists[model_name] = data_dist
             else:
                 trained_dists[model_name] = data_dist
-    # get baseline dist
-    # baseline_identifier = f"STRF_freqs80_mel_wh_{identifier}"
-    # if mVocs:
-    #     baseline_identifier = f"STRF_freqs80_wavlet_{identifier}"
-    # else:
-    #     baseline_identifier = f"STRF_freqs80_mel_{identifier}"
     strf_obj = STRFCorrelations(baseline_identifier)
     if threshold is None:
         threshold= strf_obj.get_normalizer_threshold(

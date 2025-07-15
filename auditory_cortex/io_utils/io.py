@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import gzip
 import pickle
-from auditory_cortex import opt_inputs_dir, results_dir, cache_dir, normalizers_dir
+from auditory_cortex import opt_inputs_dir, results_dir, cache_dir, normalizers_dir, saved_corr_dir
 from auditory_cortex import valid_model_names
 from memory_profiler import profile
 import logging
@@ -803,9 +803,10 @@ def write_lmbdas(
 
 def read_WER():
 
-    path_dir = os.path.join(results_dir, 'task_optimization')
+    # path_dir = os.path.join(results_dir, 'task_optimization')
     filename = f'pretrained_networks_WERs.csv'    
-    file_path = os.path.join(path_dir, filename)
+    # file_path = os.path.join(path_dir, filename)
+    file_path = os.path.join(saved_corr_dir, filename)
     if os.path.isfile(file_path):
         logger.info("Reading existing WER results")
         return pd.read_csv(file_path, index_col=0)

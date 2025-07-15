@@ -3,14 +3,15 @@ import matplotlib.pyplot as plt
 
 from auditory_cortex import results_dir
 from auditory_cortex.plotters.plotter_utils import PlotterUtils
-from auditory_cortex.neural_data.deprecated.neural_meta_data import NeuralMetaData
-from auditory_cortex.neural_data.deprecated.recording_config import RecordingConfig
+# from auditory_cortex.neural_data.deprecated.neural_meta_data import NeuralMetaData
+# from auditory_cortex.neural_data.deprecated.recording_config import RecordingConfig
+from auditory_cortex.neural_data import create_neural_metadata
 
 class CoordinatesPlotter:
     """"Provides functionality of plotting mini-plots at coordinate
     locations of sessions."""
     def __init__(self) -> None:
-        self.m_data = NeuralMetaData(RecordingConfig)
+        self.m_data = create_neural_metadata('ucsf')
         color_options = ['red', 'green', 'blue', 'brown']
         area_options = self.m_data.get_area_choices()
         self.area_wise_colors = {area: color for area, color in zip(area_options, color_options)}

@@ -4,31 +4,23 @@ import pickle
 import numpy as np
 import pandas as pd
 import scipy as scp
-# import seaborn as sns
 import matplotlib as mpl
-# import plotly.express as px
+
 from scipy.io import wavfile
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
-# from sklearn.decomposition import PCA
+
 
 from palettable.colorbrewer import qualitative
 from abc import ABC, abstractmethod
 
 #local 
-# from .normalizer_analyzer import NormalizerAnalyzer
 from auditory_cortex.neural_data import NormalizerCalculator
 from auditory_cortex.neural_data import create_neural_metadata
 
 import auditory_cortex.utils as utils
-# from auditory_cortex.utils import CorrelationUtils
-# from auditory_cortex.neural_data import NeuralMetaData
-
-# from auditory_cortex.neural_data.normalizer import Normalizer
-# from auditory_cortex import session_to_coordinates, session_to_subject, session_to_area, area_to_sessions #, CMAP_2D
 from auditory_cortex import saved_corr_dir, aux_dir, valid_model_names
 from auditory_cortex.io_utils import io
-# from pycolormap_2d import ColorMap2DBremm, config, results_dir
 
 import logging
 logger = logging.getLogger(__name__)
@@ -102,10 +94,6 @@ class BaseCorrelations(ABC):
             null_mean_col = 'mVocs_'+null_mean_col
             null_std_col = 'mVocs_'+null_std_col
 
-        # if mVocs:
-        #     norm_column = 'mVocs_'+norm_column
-        # print(f"Applying threshold: {threshold:.3f} on column: '{norm_column}'...")
-        # select_data = select_data[select_data[norm_column]>=float(threshold)]
         logger.info(f"Filtering '{norm_column}' using multiple of {threshold:.3f} with std dev ...")
         select_data = select_data[
             (select_data[norm_column] > 0.0) & \
@@ -151,7 +139,6 @@ class BaseCorrelations(ABC):
         for bin_width in bin_widths:
             select_data = self.get_selected_data(bin_width=bin_width)
             sessions = select_data['session'].unique()
-            # delays = select_data['delay'].unique()
             for session in sessions:
                 # for delay in delays:
                 select_data = self.get_selected_data(
@@ -169,15 +156,7 @@ class BaseCorrelations(ABC):
                     session=session, bin_width=bw_norm, mVocs=mVocs,
                     )
 
-                # norm_means = np.mean(norm_dist, axis=0)
-                # null_means = np.mean(null_dist, axis=0)
-                # null_std = np.std(null_dist, axis=0)
-
                 for ch in channels:
-                    # ch = int(ch)
-                    # ch_normalizer = norm_means[ch]
-                    # ch_null_mean = null_means[ch]
-                    # ch_null_std = null_std[ch]
 
                     ch_normalizer = np.mean(norm_dist[ch])
                     ch_null_mean = np.mean(null_dist[ch])
@@ -224,10 +203,6 @@ class BaseCorrelations(ABC):
                 in the duration of test set stimuli is used to determine 
                 the length of random sequences.
         """
-        # threshold_dict = io.read_normalizer_threshold(
-        #     bin_width=bin_width, poisson_normalizer=poisson_normalizer
-        #     )
-        # if threshold_dict is None or bin_width not in threshold_dict.keys():
         if threshold_percentile is None:
             threshold_percentile=90
         if poisson_normalizer:
@@ -239,39 +214,6 @@ class BaseCorrelations(ABC):
         else:
             threshold = self.norm_obj.compute_normalizer_threshold(bin_width=bin_width)[0]
         return threshold
-
-
-
-    # # ------------------  copy normalizer for all bin-widths ----------------#
-    # def set_normalizers(self, bin_widths: list=None):
-    #     """Set normalizers (repeatability correlations) from the saved results.
-    #     """
-    #     if bin_widths is None:
-    #         bin_widths = self.data['bin_width'].unique()
-    #     for bin_width in bin_widths:
-    #         select_data = self.get_selected_data(bin_width=bin_width)
-    #         sessions = select_data['session'].unique()
-    #         delays = select_data['delay'].unique()
-    #         for session in sessions:
-    #             for delay in delays:
-    #                 select_data = self.get_selected_data(
-    #                     sessions=[session], bin_width=bin_width, delay=delay
-    #                 )
-    #                 channels = select_data['channel'].unique()
-    #                 selected_normalizers = self.norm_obj.get_normalizer_for_session(
-    #                     session=session, bin_width=bin_width, delay=delay
-    #                     )
-    #                 for ch in channels:
-    #                     ids = select_data[select_data['channel']==ch].index
-    #                     ch_normalizer = selected_normalizers[
-    #                             selected_normalizers['channel']==ch
-    #                         ]['normalizer'].head(1).item()
-    #                     self.data.loc[ids, 'normalizer'] = ch_normalizer #/0.82   # adjusting for context..
-
-    #     self.data['normalized_test_cc'] = self.data['test_cc_raw']/(self.data['normalizer'].apply(np.sqrt))
-    #     print(f"Normalizers updated FOR CONTEXT AS WELL, writing back now...")
-    #     self.write_back()
-
     
 
     def write_back(self):
@@ -376,15 +318,8 @@ class STRFCorrelations(BaseCorrelations):
         if delay is not None:
             select_data = select_data[select_data['delay']==float(delay)]
         
-        # if channel is not None:
-        #     select_data = select_data[select_data['channel']==float(channel)]
         if threshold is not None:
             select_data = self.get_highly_tuned_channels(select_data, threshold=threshold, mVocs=mVocs)
-            # norm_column = 'normalizer'
-            # if mVocs:
-            #     norm_column = 'mVocs_'+norm_column
-            # print(f"Applying threshold: {threshold:.3f} on column: '{norm_column}'...")
-            # select_data = select_data[select_data[norm_column]>=float(threshold)]
 
         if lag is not None:
             select_data = select_data[select_data['tmax']==float(lag)]
@@ -412,16 +347,10 @@ class STRFCorrelations(BaseCorrelations):
         
         column='test_cc_raw'
         if normalized:
-            # Deprecated...
-            # if use_stat_inclusion:
-            #     column = 'corr_normalized_app'
-            # else:
             column = 'normalized_test_cc'
 
         if mVocs:
             column = 'mVocs_'+column
-        # if lag is None:
-        #     lag = 0.3
 
         area_sessions = self.metadata.get_all_sessions(neural_area)
         if use_stat_inclusion:
@@ -435,88 +364,8 @@ class STRFCorrelations(BaseCorrelations):
                 sessions=area_sessions, bin_width=bin_width, delay=delay,
                 threshold=threshold, lag=lag, mVocs=mVocs
             )
-        # if threshold is not None:
-        #     selected_data = selected_data[
-        #         (selected_data['normalizer']>=threshold)
-        #     ]
-        
-        # selected_data = selected_data[
-        #     (selected_data['tmax']==lag)
-        # ]
-
         return selected_data[column]
     
-    # def get_corr_for_area(
-    #         self, neural_area='core',bin_width=20, delay=0,
-    #         threshold=0.068, lag=None, normalized=True
-    #     ):
-    #     """Retrieves baseline correlations for all sig. sessions."""
-    #     area_sessions = self.metadata.get_all_sessions(neural_area)
-
-    #     corr_dist = self.get_correlations(
-    #         sessions=area_sessions, bin_width=bin_width, delay=delay,
-    #         threshold=threshold, lag=lag, normalized=normalized
-    #     )
-    #     return corr_dist
-
-
-
-
-    # @staticmethod
-    # def combine_and_ready(
-    #         model_name, identifiers_list, output_id, normalizer_filename=None,
-    #         output_identifier=None
-    #     ):
-    #     """Merges results for all identifiers, copies layer types and
-    #     sets normalizer."""
-
-    #     BaseCorrelations.merge_correlation_results(
-    #             model_name=model_name,
-    #             identifiers_list=identifiers_list,
-    #             output_id=output_id,
-    #             output_identifier=output_identifier
-    #         )
-        
-    #     if output_identifier is None:
-    #         output_identifier = identifiers_list[output_id]
-
-        # print("Updating Normalizer...!")
-        # res = model_name + '_' + output_identifier
-        # corr_obj = STRFCorrelations(res, normalizer_filename=normalizer_filename)
-        # # make sure 'test_cc_raw' and 'normalizer' columns are set...!
-        # corr_obj.data['test_cc_raw'] = corr_obj.data['strf_corr']
-        # corr_obj.set_normalizers()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# from naplib.visualization import imSTRF
 
 
 class Correlations(BaseCorrelations):
@@ -557,16 +406,16 @@ class Correlations(BaseCorrelations):
         # self.sig_threshold = sig_threshold
 
         # loading STRF baseline
-        third = None
-        if third is None:
-            STRF_filename = 'STRF_corr_results.csv'
-        else:
-            STRF_filename = f'STRF_{third}_third_corr_results.csv'
+        # third = None
+        # if third is None:
+        #     STRF_filename = 'STRF_corr_results.csv'
+        # else:
+        #     STRF_filename = f'STRF_{third}_third_corr_results.csv'
 
-        STRF_file_path = os.path.join(saved_corr_dir, STRF_filename)
-        self.baseline_corr = pd.read_csv(STRF_file_path)
-        self.baseline_corr['strf_corr_normalized'] = self.baseline_corr['strf_corr']/(self.baseline_corr['normalizer'].apply(np.sqrt))
-        # STRF_file_path = os.path.join(results_dir, 'cross_validated_correlations', 'STRF_corr_RidgeCV.npy')
+        # STRF_file_path = os.path.join(saved_corr_dir, STRF_filename)
+        # self.baseline_corr = pd.read_csv(STRF_file_path)
+        # self.baseline_corr['strf_corr_normalized'] = self.baseline_corr['strf_corr']/(self.baseline_corr['normalizer'].apply(np.sqrt))
+        # # STRF_file_path = os.path.join(results_dir, 'cross_validated_correlations', 'STRF_corr_RidgeCV.npy')
         # self.baseline_corr = np.load(STRF_file_path)
 
         # using colorbrewer (palettable) colors... 
@@ -645,44 +494,45 @@ class Correlations(BaseCorrelations):
         ax.scatter(coordinates[:,0], coordinates[:,1], c = colors, s=dot_size)
         return ax
 
-    def get_baseline_corr_ch(self, session, ch, bin_width=20, delay=0, column='strf_corr'):
-        corr = self.baseline_corr[
-                (self.baseline_corr['session']==float(session))&\
-                (self.baseline_corr['channel']==ch)&\
-                (self.baseline_corr['bin_width']==bin_width)&\
-                (self.baseline_corr['delay']==delay)
-            ][column].head(1).item()
-        return corr
+    # deprecated
+    # def get_baseline_corr_ch(self, session, ch, bin_width=20, delay=0, column='strf_corr'):
+    #     corr = self.baseline_corr[
+    #             (self.baseline_corr['session']==float(session))&\
+    #             (self.baseline_corr['channel']==ch)&\
+    #             (self.baseline_corr['bin_width']==bin_width)&\
+    #             (self.baseline_corr['delay']==delay)
+    #         ][column].head(1).item()
+    #     return corr
     
         
     
-    def get_baseline_corr_session(
-            self, sessions=None, bin_width=20, delay=0, column='strf_corr', threshold=None,
-            normalized=True):
+    # def get_baseline_corr_session(
+    #         self, sessions=None, bin_width=20, delay=0, column='strf_corr', threshold=None,
+    #         normalized=True):
         
-        column='strf_corr'
-        if normalized:
-            column += '_normalized'
+    #     column='strf_corr'
+    #     if normalized:
+    #         column += '_normalized'
 
-        select_baseline = self.baseline_corr[
-                (self.baseline_corr['bin_width']==bin_width)&\
-                (self.baseline_corr['delay']==delay)
-            ]
+    #     select_baseline = self.baseline_corr[
+    #             (self.baseline_corr['bin_width']==bin_width)&\
+    #             (self.baseline_corr['delay']==delay)
+    #         ]
         
-        if threshold is not None:
-            select_baseline = select_baseline[
-                (select_baseline['normalizer']>=threshold)
-            ]
-        if sessions is not None:
-            # sessions should be list or None...
-            session_baselines = []
-            for session in sessions:
-                session_baselines.append(select_baseline[
-                        (select_baseline['session']==float(session))
-                    ])
-            select_baseline = pd.concat(session_baselines)    
-        return select_baseline[column]
-    # Moved to BaseCorrelation    
+    #     if threshold is not None:
+    #         select_baseline = select_baseline[
+    #             (select_baseline['normalizer']>=threshold)
+    #         ]
+    #     if sessions is not None:
+    #         # sessions should be list or None...
+    #         session_baselines = []
+    #         for session in sessions:
+    #             session_baselines.append(select_baseline[
+    #                     (select_baseline['session']==float(session))
+    #                 ])
+    #         select_baseline = pd.concat(session_baselines)    
+    #     return select_baseline[column]
+    # # Moved to BaseCorrelation    
     # def get_filepath(self):
     #     """Returns abs path of corr result file."""
     #     return self.corr_file_path
@@ -1085,103 +935,103 @@ class Correlations(BaseCorrelations):
         return select_data
 
 
-    
-    def box_plot_correlations(self, sessions=None, threshold=0.0,bin_width=20, delay=0, N_sents=499,
-                    normalized=False, ax=None, delta_corr=False, y_axis_lim=None, lw=1.5):
-        """Plots box and whisker graphs for each layer of the given session, 
-        if no session is mentioned, then it plots the same layer-wise plots by taking together 
-        significant neurons from all sessions.
-        """
-        if ax is None:
-            fig, ax = plt.subplots()
+    # deprecated
+    # def box_plot_correlations(self, sessions=None, threshold=0.0,bin_width=20, delay=0, N_sents=499,
+    #                 normalized=False, ax=None, delta_corr=False, y_axis_lim=None, lw=1.5):
+    #     """Plots box and whisker graphs for each layer of the given session, 
+    #     if no session is mentioned, then it plots the same layer-wise plots by taking together 
+    #     significant neurons from all sessions.
+    #     """
+    #     if ax is None:
+    #         fig, ax = plt.subplots()
 
-        if normalized:
-            norm = ', normalized'
-            column = 'normalized_test_cc'
-            strf_column = 'strf_corr_normalized'
-            if y_axis_lim is not None:
-                y_axis_lim += 0.3
-        else:
-            norm = ''
-            column = 'test_cc_raw'
-            strf_column = 'strf_corr'
+    #     if normalized:
+    #         norm = ', normalized'
+    #         column = 'normalized_test_cc'
+    #         strf_column = 'strf_corr_normalized'
+    #         if y_axis_lim is not None:
+    #             y_axis_lim += 0.3
+    #     else:
+    #         norm = ''
+    #         column = 'test_cc_raw'
+    #         strf_column = 'strf_corr'
 
-        select_data = self.get_session_data(
-            sessions, threshold=threshold, bin_width=bin_width, delay=delay, N_sents=N_sents
-        )
-        layer_ids = np.sort(select_data['layer'].unique())
+    #     select_data = self.get_session_data(
+    #         sessions, threshold=threshold, bin_width=bin_width, delay=delay, N_sents=N_sents
+    #     )
+    #     layer_ids = np.sort(select_data['layer'].unique())
         
-        if delta_corr:
-            layer_spread = {}
-            for layer in layer_ids:
-                differences = []
-                ids = select_data[select_data['layer']==layer].index
-                for id in ids:
-                    channel_corr =  select_data.loc[id, column]
-                    ch = int(select_data.loc[id, 'channel'])
-                    sess = select_data.loc[id, 'session']
-                    baseline = self.get_baseline_corr_ch(sess, ch, column=strf_column)
-                    differences.append(channel_corr - baseline)
+    #     if delta_corr:
+    #         layer_spread = {}
+    #         for layer in layer_ids:
+    #             differences = []
+    #             ids = select_data[select_data['layer']==layer].index
+    #             for id in ids:
+    #                 channel_corr =  select_data.loc[id, column]
+    #                 ch = int(select_data.loc[id, 'channel'])
+    #                 sess = select_data.loc[id, 'session']
+    #                 baseline = self.get_baseline_corr_ch(sess, ch, column=strf_column)
+    #                 differences.append(channel_corr - baseline)
 
-                layer_spread[int(layer)] = np.array(differences)
-            y_axis_label = "$\Delta\\rho$"
-        else:
-            layer_spread = {}
-            for layer in layer_ids:
-                ids = select_data[select_data['layer']==layer].index
-                layer_spread[int(layer)] = np.array(select_data.loc[ids, column]).squeeze()
+    #             layer_spread[int(layer)] = np.array(differences)
+    #         y_axis_label = "$\Delta\\rho$"
+    #     else:
+    #         layer_spread = {}
+    #         for layer in layer_ids:
+    #             ids = select_data[select_data['layer']==layer].index
+    #             layer_spread[int(layer)] = np.array(select_data.loc[ids, column]).squeeze()
 
-            baseline_corr = self.get_baseline_corr_session(sessions, column=strf_column, threshold=threshold)
-            logger.info(f"Baseline median: {np.median(baseline_corr):.3f}")
-            plt.axhline(baseline_corr.median(),
-                        c='r', linewidth=3, ls='--', label='STRF baseline - (median)')
-            plt.axhline(baseline_corr.max(),
-                        c='r', linewidth=3, ls='--', alpha=0.3, label='STRF baseline - (peak)')
-            plt.legend(loc='best')
-            y_axis_label = "$\\rho$"
-            if y_axis_lim is not None:
-                ax.set_ylim([-0.05, y_axis_lim])
+    #         baseline_corr = self.get_baseline_corr_session(sessions, column=strf_column, threshold=threshold)
+    #         logger.info(f"Baseline median: {np.median(baseline_corr):.3f}")
+    #         plt.axhline(baseline_corr.median(),
+    #                     c='r', linewidth=3, ls='--', label='STRF baseline - (median)')
+    #         plt.axhline(baseline_corr.max(),
+    #                     c='r', linewidth=3, ls='--', alpha=0.3, label='STRF baseline - (peak)')
+    #         plt.legend(loc='best')
+    #         y_axis_label = "$\\rho$"
+    #         if y_axis_lim is not None:
+    #             ax.set_ylim([-0.05, y_axis_lim])
 
-        # plotting function
-        median_lines = dict(color='k', linewidth=lw*2)  
-        other_lines = dict(color='k', linewidth=lw)
-        bplot = ax.boxplot(layer_spread.values(), positions = np.arange(1, len(layer_spread.keys())+1),
-                    labels=layer_spread.keys(),
-                    whis=[5,95],
-                    capprops=other_lines,
-                    whiskerprops=other_lines,
-                    medianprops=median_lines,
-                    patch_artist=True
-                    )
+    #     # plotting function
+    #     median_lines = dict(color='k', linewidth=lw*2)  
+    #     other_lines = dict(color='k', linewidth=lw)
+    #     bplot = ax.boxplot(layer_spread.values(), positions = np.arange(1, len(layer_spread.keys())+1),
+    #                 labels=layer_spread.keys(),
+    #                 whis=[5,95],
+    #                 capprops=other_lines,
+    #                 whiskerprops=other_lines,
+    #                 medianprops=median_lines,
+    #                 patch_artist=True
+    #                 )
         
-        # setting the colors of the boxes as per layer type..
-        for layer_id, box, flier in zip(layer_ids, bplot['boxes'], bplot['fliers']):
-            ids = self.data[self.data['layer']==layer_id].index
-            layer_type = self.data.loc[ids, 'layer_type'].unique().item()
-            color = self.fill_color[layer_type]
-            box.set(
-                facecolor = color,
-                linewidth=lw
-            )
-            flier.set(
-                    markeredgecolor='k',
-                    markerfacecolor=color,
-            )
+    #     # setting the colors of the boxes as per layer type..
+    #     for layer_id, box, flier in zip(layer_ids, bplot['boxes'], bplot['fliers']):
+    #         ids = self.data[self.data['layer']==layer_id].index
+    #         layer_type = self.data.loc[ids, 'layer_type'].unique().item()
+    #         color = self.fill_color[layer_type]
+    #         box.set(
+    #             facecolor = color,
+    #             linewidth=lw
+    #         )
+    #         flier.set(
+    #                 markeredgecolor='k',
+    #                 markerfacecolor=color,
+    #         )
 
-        ax.set_title(f"{self.model}, session-{sessions}{norm}")
-        ax.set_xlabel('layer IDs')
-        ax.set_ylabel(y_axis_label)
-        # remove borders
-        # ax.spines['top'].set_visible(False)
-        # ax.spines['right'].set_visible(False)
-        # ax.spines['left'].set_visible(False)
-        # # remove y-axis tick marsks
-        # ax.yaxis.set_ticks_position('none')
-        # add major grid lines in y-axis
-        ax.grid(color='grey', axis='y', linestyle='-', linewidth = 0.5, alpha=0.5)
+    #     ax.set_title(f"{self.model}, session-{sessions}{norm}")
+    #     ax.set_xlabel('layer IDs')
+    #     ax.set_ylabel(y_axis_label)
+    #     # remove borders
+    #     # ax.spines['top'].set_visible(False)
+    #     # ax.spines['right'].set_visible(False)
+    #     # ax.spines['left'].set_visible(False)
+    #     # # remove y-axis tick marsks
+    #     # ax.yaxis.set_ticks_position('none')
+    #     # add major grid lines in y-axis
+    #     ax.grid(color='grey', axis='y', linestyle='-', linewidth = 0.5, alpha=0.5)
 
     
-        return ax, layer_spread
+    #     return ax, layer_spread
     
 # ------------------  Retrieve data for analysis ----------------#
 
@@ -1229,10 +1079,6 @@ class Correlations(BaseCorrelations):
             bw_threshold = self.get_normalizer_threshold(
                 bin_width=bin_width, poisson_normalizer=poisson_normalizer
             )
-            # if poisson_normalizer:
-            #     bw_threshold = self.norm_obj.compute_normalizer_threshold_using_poisson(bin_width=bin_width)[0]
-            # else:
-            #     bw_threshold = self.norm_obj.compute_normalizer_threshold(bin_width=bin_width)[0]
             select_data = self.get_selected_data(
                 sessions=area_sessions,
                 bin_width=bin_width, 
@@ -1241,23 +1087,9 @@ class Correlations(BaseCorrelations):
                 threshold=bw_threshold,
                 N_sents=N_sents
             )
-            # ids = select_data[select_data['bin_width']==bin_width].index
+            
             dist_spread[int(bin_width)] = np.array(select_data[column]).squeeze()
 
-
-        # select_data = self.get_selected_data(
-        #     sessions=area_sessions, 
-        #     layer=layer,
-        #     delay=delay,
-        #     threshold=threshold,
-        #     N_sents=N_sents
-        # )
-
-        # dist_spread = {}   
-        # bin_widths = select_data['bin_width'].unique()
-        # for bin_width in bin_widths:
-        #     ids = select_data[select_data['bin_width']==bin_width].index
-        #     dist_spread[int(bin_width)] = np.array(select_data.loc[ids, column]).squeeze()
         # sort the result based on keys...
         dist_spread = dict(sorted(dist_spread.items(), key=lambda item: item[0]))
         return dist_spread
@@ -1363,25 +1195,26 @@ class Correlations(BaseCorrelations):
         x_ticks = (x_tick_labels)*snippet_width + snippet_width//2
 
         return hist_combined, (x_ticks, x_tick_labels), (yticks, ytick_labels)
-    
-    def get_KDE_for_baseline(
-            self, area, bin_width, delay=0,
-            normalized=True, poisson_normalizer = True 
-        ):
-        """Get KDE for baseline data."""
-        bw_threshold = self.get_normalizer_threshold(
-                bin_width=bin_width, poisson_normalizer=poisson_normalizer
-                )
 
-        # plot baseline...
-        area_sessions = self.metadata.get_all_sessions(area)
-        baseline_dist = self.get_baseline_corr_session(
-            sessions= area_sessions,bin_width=bin_width, delay=delay,
-                    threshold=bw_threshold, normalized=normalized)
+    # deprecated    
+    # def get_KDE_for_baseline(
+    #         self, area, bin_width, delay=0,
+    #         normalized=True, poisson_normalizer = True 
+    #     ):
+    #     """Get KDE for baseline data."""
+    #     bw_threshold = self.get_normalizer_threshold(
+    #             bin_width=bin_width, poisson_normalizer=poisson_normalizer
+    #             )
 
-        data_dist = {0: baseline_dist}
+    #     # plot baseline...
+    #     area_sessions = self.metadata.get_all_sessions(area)
+    #     baseline_dist = self.get_baseline_corr_session(
+    #         sessions= area_sessions,bin_width=bin_width, delay=delay,
+    #                 threshold=bw_threshold, normalized=normalized)
 
-        return self.get_KDE_from_dist(data_dist)
+    #     data_dist = {0: baseline_dist}
+
+    #     return self.get_KDE_from_dist(data_dist)
 
 
     def get_KDE_from_dist(
@@ -1575,19 +1408,19 @@ class Correlations(BaseCorrelations):
         logger.info(f"Number of sig. neurons = {corr_dict[layer_id].shape[0]}")
         return corr_dict[layer_id]
     
+    # deprecated
+    # def get_baseline_corr_for_area(
+    #         self, neural_area='core',bin_width=20, delay=0,
+    #         threshold=0.068, normalized=True
+    #     ):
+    #     """Retrieves baseline correlations for all sig. sessions."""
+    #     area_sessions = self.metadata.get_all_sessions(neural_area)
 
-    def get_baseline_corr_for_area(
-            self, neural_area='core',bin_width=20, delay=0,
-            threshold=0.068, normalized=True
-        ):
-        """Retrieves baseline correlations for all sig. sessions."""
-        area_sessions = self.metadata.get_all_sessions(neural_area)
-
-        corr_dist = self.get_baseline_corr_session(
-            sessions=area_sessions, bin_width=bin_width, delay=delay,
-            threshold=threshold, normalized=normalized
-        )
-        return corr_dist
+    #     corr_dist = self.get_baseline_corr_session(
+    #         sessions=area_sessions, bin_width=bin_width, delay=delay,
+    #         threshold=threshold, normalized=normalized
+    #     )
+    #     return corr_dist
     
     def get_architecture_specific_layer_ids(self):
         """

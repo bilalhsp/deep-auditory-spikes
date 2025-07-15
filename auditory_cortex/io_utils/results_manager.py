@@ -81,7 +81,7 @@ class ResultsManager:
             identifier: str = identifier for the results file
             num_sessions: int = number of sessions to be done
             verbose: bool = True if verbose, False if not
-        """
+        """ 
         return_list = []
         if verbose:
             logger.info(f"For '{model_name}', '{identifier}'")
@@ -93,6 +93,7 @@ class ResultsManager:
             logger.warning(f"File not found: {corr_file_path}")
             return_list.append(model_name+'_'+identifier)
             return return_list
+
 
         bin_widths = np.sort(dataframe['bin_width'].unique())
         for bin_width in bin_widths:

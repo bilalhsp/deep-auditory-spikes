@@ -6,7 +6,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
 from palettable.colorbrewer import qualitative
-from auditory_cortex import results_dir, valid_model_names
+from auditory_cortex import DNN_MODELS
 
 from utils_jgm.tikz_pgf_helpers import tpl_save
 
@@ -14,8 +14,16 @@ from utils_jgm.tikz_pgf_helpers import tpl_save
 class PlotterUtils:
     """Contains utility methods for plotting.
     """
-    model_names = valid_model_names[:6]
+    model_names = DNN_MODELS[:6]
     colors = qualitative.Dark2_8.mpl_colors
+    model_colors = {
+        'deepspeech2': colors[0],
+        'speech2text': colors[1],
+        'wav2letter_modified': colors[2],
+        'whisper_tiny': colors[3],
+        'whisper_base': colors[4],
+        'wav2vec2': colors[5],
+    }
     paired_colors = qualitative.Paired_12.mpl_colors
 
     color_adjustments = {
@@ -30,8 +38,7 @@ class PlotterUtils:
     def get_model_specific_color(cls, model_name):
         """Returns model specific color"""
         if model_name in cls.model_names:
-            ind = cls.model_names.index(model_name)
-            return cls.colors[ind]
+            return cls.model_colors[model_name]
         elif model_name == 'w2v2_audioset':
             return cls.paired_colors[5]
         elif model_name == 'cochresnet50':

@@ -128,23 +128,6 @@ class TRF:
         logger.info(f"Total duration={stim_duration:.2f} sec")
         return stim_ids
 
-
-        # mapping_set = self.dataset_assembler.training_stim_ids
-        # np.random.shuffle(mapping_set)
-        # if N_sents is None or N_sents >= 100:	
-        #     return mapping_set
-        # else:
-        #     required_duration = N_sents*10  # why is this 10?
-        #     print(f"Mapping set for stim duration={required_duration:.2f} sec")
-        #     stimili_duration=0
-        #     for n in range(5, len(mapping_set)):
-        #         stimili_duration += self.dataset_assembler.dataloader.get_stim_duration(
-        #             mapping_set[n], mVocs=mVocs
-        #             )
-        #         if stimili_duration >= required_duration:
-        #             break
-        # return mapping_set[:n+1]
-
     def cross_validated_fit(
             self,
             tmax=50,
@@ -276,24 +259,11 @@ class TRF:
             shuffled=shuffled, layer_ID=layer_ID, LPF=LPF, mVocs=mVocs,
             dataset_name=dataset_name, lag=tmax
             )
-        # biases = io.read_trf_parameters(
-        #         model_name, session, bin_width, shuffled,
-        #         verbose=False, LPF=LPF, mVocs=mVocs,
-        #         bias=True, dataset_name=dataset_name,
-        #         lag=tmax
-        #     )
-        # alphas = io.read_alphas(
-        #     model_name, session, bin_width=bin_width,
-        #     shuffled=shuffled, layer_ID=layer_ID, LPF=LPF, mVocs=mVocs,
-        #     dataset_name=dataset_name, lag=tmax
-        #     )
+
         if parameters is None:
             # raise ValueError(f"Model parameters not found for session={session}")
             logger.warn(f"Model parameters not found for session={session}")
             return None
-        
-        # weights = weights[layer_ID]
-        # biases = biases[layer_ID]
         
         tmax = tmax/1000
         sfreq = 1000/bin_width
@@ -506,18 +476,12 @@ class GpuTRF(nl.encoding.TRF):
             if self.n_alphas ==1:	
                 weights = self.model.coef_.reshape(self.X_feats_, self._ndelays, self.n_targets_)
                 return weights
-                # weights = self.model.coef_[0].reshape(self.X_feats_, self._ndelays, self.n_targets_)
-                # biases = self.model.coef_[1]
-                # return weights, biases
             else:
                 coef = []
                 biases = []
                 for i in range(self.n_alphas):
                     coef.append(self.models[i].coef_.reshape(self.X_feats_, self._ndelays))
                 return np.stack(coef, axis=-1)
-                    # coef.append(self.models[i].coef_[0].reshape(self.X_feats_, self._ndelays))
-                    # biases.append(self.models[i].coef_[1])
-                # return np.stack(coef, axis=-1), np.stack(biases, axis=-1)
             
     @coef_.setter
     def coef_(self, value):
@@ -526,15 +490,6 @@ class GpuTRF(nl.encoding.TRF):
         self.X_feats_ = value.shape[0]
         self.model.coef_ = value.reshape(-1, value.shape[-1])
         self.n_alphas = 1
-        
-
-        # weights, bias = value
-        # self.model.coef_ = (weights, bias)
-        # these attributes are needed to be able to predict.
-        # self.n_alphas = 1
-        # self.X_feats_ = weights.shape[0]
-        
-
         
 
 class LinearModel:
@@ -611,14 +566,5 @@ class LinearModel:
     def coef_(self, value):
         """Sets the coefficients of the linear map."""
         self.Beta = cp.asarray(value)
-
-        # # Expecting value to be a tuple: (weights, bias)
-        # weights, bias = value
-
-        # # Ensure the input values are numpy/cupy arrays and assign them to the appropriate parts of Beta
-        # weights = cp.asarray(weights)  # Convert weights to the appropriate format (using cupy here)
-        # bias = cp.asarray(bias)  # Convert bias to the appropriate format (using cupy here)
-
-        # # Concatenate the weights and bias to form the new Beta
-        # self.Beta = np.concatenate([weights.reshape(-1, weights.shape[-1]), bias[None,:]], axis=0)	
+	
 

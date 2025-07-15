@@ -575,6 +575,7 @@ class RegPlotter:
         # select appropraite results identifier...
         if tikz_indicator is None:
             tikz_indicator = 'reset-avg'
+        print(trained_identifier)
         corr_obj_trained = Correlations(model_name+'_'+trained_identifier)
         if threshold is None:
             threshold = corr_obj_trained.get_normalizer_threshold(
@@ -612,7 +613,6 @@ class RegPlotter:
         # plot trained network results...
         color = PlotterUtils.get_model_specific_color(model_name)
         if plot_normalized:
-
             # indicate_architecture = False
 
             if baseline_identifier is None:
