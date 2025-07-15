@@ -12,7 +12,7 @@ Args:
     force_redo: bool, default=False, -f
     
 Example usage:
-    python cache_norm_dists.py -d ucsf -b 20 50 -v -n 100000 -s 0 -e 45 
+    python cache_norm_dists.py -d ucsf -b 50 -v -n 100000 -s 0 -e 45 
 """
 # ------------------  imports ----------------------#
 import time

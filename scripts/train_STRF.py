@@ -1,3 +1,27 @@
+"""
+This script computes and saves regression for STRF 
+model.
+It uses the TRF class to compute the regression
+and saves the results in a CSV file.
+It also allows for the option to save the
+parameters of the regression model.
+
+Args:
+    dataset_name: str ['ucsf', 'ucdavis'], -d
+    lag: int, default=200, --lag
+    bin_widths: list of int, -b
+    identifier: str, default='', -i
+    mVocs: bool, default=False, -v
+    mel_spectrogram: bool, default=False, --mel
+    spectrogram_type: str, default=None, --type
+    start: int, default=0, --start, -s
+    end: int, default=41, --end, -e
+    save_param: bool, default=False, --save_param
+
+Example usage:
+    python train_STRF.py -d ucdavis --lag 200 -b 50 -v --spec_type cochleogram -i initial
+"""
+
 import logging
 from auditory_cortex.utils import set_up_logging
 set_up_logging()
@@ -8,24 +32,19 @@ import argparse
 
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import RidgeCV, ElasticNetCV
-import auditory_cortex.io_utils.io as io
+
 
 # local
-
 from auditory_cortex import utils, config, saved_corr_dir
-from auditory_cortex.io_utils.io import write_model_parameters
 from auditory_cortex.neural_data import create_neural_dataset, create_neural_metadata
 from auditory_cortex.data_assembler import STRFDataAssembler
 from auditory_cortex.encoding import TRF
+from auditory_cortex.io_utils import ResultsManager
 
 
 # ------------------  Baseline computing function ----------------------#
 
 def compute_and_save_STRF_baseline(args):
-    data_dir = config['neural_data_dir']
-    bad_sessions = config['bad_sessions']
-    # results_dir = config['results_dir']
 
     bin_width = args.bin_width
     tmin = 0
@@ -34,21 +53,17 @@ def compute_and_save_STRF_baseline(args):
     # sfreq = 100
 
     num_freqs = 80
-    num_workers = 6
     delay = 0.0
-    num_alphas = 8
     num_folds=3
-    third = None
-    lags = [args.lag] #[5, 10, 20, 40, 80, 160, 320]
-    test_trial=None
-    use_nonlinearity=args.non_linearity
+    lag = args.lag 
     mVocs = args.mVocs
     mel_spectrogram = args.mel_spectrogram
     dataset_name = args.dataset_name
     spectrogram_type = args.spectrogram_type
+    save_param = args.save_param
 
-    results_identifier = utils.get_run_id(
-            dataset_name, bin_width, identifier, mVocs=mVocs, lag=lags[0],
+    results_identifier = ResultsManager.get_run_id(
+            dataset_name, bin_width, identifier, mVocs=mVocs, lag=lag,
         )
     if mel_spectrogram:
         if spectrogram_type is None or 'speech2text' in spectrogram_type:
@@ -90,7 +105,7 @@ def compute_and_save_STRF_baseline(args):
         subjects = sessions
 
     dataset_obj = create_neural_dataset(dataset_name, subjects[0])
-    dataset = STRFDataAssembler(
+    data_assembler = STRFDataAssembler(
         dataset_obj, bin_width, mVocs=mVocs,
         mel_spectrogram=mel_spectrogram,
         spectrogram_type=spectrogram_type,
@@ -104,28 +119,24 @@ def compute_and_save_STRF_baseline(args):
                 continue
         logging.info(f"\n Working with '{session}'")
 
-        if session != dataset.dataloader.dataset_obj.sub:
+        if session != data_assembler.get_session_id():
             # no need to read features again...just reach spikes..
             dataset_obj = create_neural_dataset(dataset_name, session)
-            dataset.read_session_spikes(dataset_obj)
-            # dataset = STRFDataAssembler(
-            #     dataset_obj, bin_width, mVocs=mVocs,
-            #     mel_spectrogram=mel_spectrogram,
-            #     spectrogram_type=spectrogram_type,
-            #     )
+            data_assembler.read_session_spikes(dataset_obj)
+            
         model_name = 'strf'
-        trf_obj = TRF(model_name, dataset)
+        trf_obj = TRF(model_name, data_assembler)
         
-        corr, opt_lag, opt_lmbda, trf_model = trf_obj.grid_search_CV(
-                lags=lags, tmin=tmin,
-                num_folds=num_folds,
-                test_trial=test_trial
+        corr, opt_lmbda, trf_model = trf_obj.grid_search_CV(
+                lag=lag, tmin=tmin, num_folds=num_folds,
             )
+        
+        if save_param:
+            trf_obj.save_model_parameters(  # specifying the layer_id = 0 for STRF
+                    trf_model, model_name, 0, session, bin_width, shuffled=False,
+                LPF=False, mVocs=mVocs, dataset_name=dataset_name, tmax=lag,
+                )
 
-        # betas = trf_model.coef_
-        # io.write_trf_parameters(
-        #     model_name, session, betas, bin_width=bin_width,
-        #     )
         if mVocs:
             mVocs_corr = corr
             timit_corr = np.zeros_like(corr)
@@ -133,18 +144,21 @@ def compute_and_save_STRF_baseline(args):
             mVocs_corr = np.zeros_like(corr)
             timit_corr = corr
 
+        channel_ids = data_assembler.channel_ids
+        num_channels = len(channel_ids)
         results_dict = {
-            'win': bin_width,
-            'delay': delay,
-            'session': session,
-            'strf_corr': timit_corr,
-            'mVocs_strf_corr': mVocs_corr,
-            'num_freqs': num_freqs,
-            'tmin': tmin,
-            'tmax': opt_lag,
-            'lmbda': np.log10(opt_lmbda),
+            'session': num_channels*[session],
+            'bin_width': num_channels*[bin_width],
+            'delay': num_channels*[delay],
+            'channel': channel_ids,
+            'test_cc_raw': timit_corr.squeeze(),
+            'mVocs_test_cc_raw': mVocs_corr.squeeze(),
+            'num_freqs': num_channels*[num_freqs],
+            'tmin': num_channels*[tmin],
+            'tmax': num_channels*[lag],
+            'lmbda': np.log10(opt_lmbda).squeeze(),
             }
-        df = utils.write_STRF(results_dict, file_path)
+        df = utils.write_to_disk(results_dict, file_path)
 
 
 # ------------------  get parser ----------------------#
@@ -152,22 +166,39 @@ def compute_and_save_STRF_baseline(args):
 def get_parser():
     # create an instance of argument parser
     parser = argparse.ArgumentParser(
-        description='This is to compute and save WER for pretrained models ',
+        description='This is to compute and save regression results for STRF model.',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
         )
-    parser.add_argument(
-        '--lag', dest='lag', type=int, action='store', 
-        default=200,
-        help="Specify the maximum lag used for STRF."
-    )
-    # parser.add_argument(
-    #     '--tmin', dest='tmin', type=float, action='store', default=0.0,
-    #     help="Specify the minimum lag used for STRF."
-    # )
     parser.add_argument(
         '-d','--dataset_name', dest='dataset_name', type= str, action='store',
         choices=['ucsf', 'ucdavis'],
         help = "Name of neural data to be used."
+    )
+    parser.add_argument(
+        '--lag', dest='lag', type=int, action='store', 
+        default=200,
+        help="Specify the maximum lag used for TRF model."
+    )
+    parser.add_argument(
+        '-b','--bin_width', dest='bin_width', type= int, action='store', default=50,
+        help="Specify the bin_width to use for analysis."
+    )
+    parser.add_argument(
+        '-v','--mVocs', dest='mVocs', action='store_true', default=False,
+        help="Specify if spikes for mVocs are to be used."
+    )
+    parser.add_argument(
+        '-i','--identifier', dest='identifier', type= str, action='store',
+        default='',
+        help="Specify identifier for saved results."
+    )
+    parser.add_argument(
+        '--mel', dest='mel_spectrogram', action='store_true', default=False,
+        help="Specify if mel_spectrogram to be used as baseline."
+    )
+    parser.add_argument(
+        '--spec_type', dest='spectrogram_type', type=str, action='store',
+        help="Specify the type of spectrogram to be used as baseline."
     )
     parser.add_argument(
         '-s','--start', dest='start_ind', type=int, action='store', 
@@ -180,32 +211,9 @@ def get_parser():
         help="Choose sessions ending index to compute results at."
     )
     parser.add_argument(
-        '-i','--identifier', dest='identifier', type= str, action='store',
-        default='',
-        help="Specify identifier for saved results."
+        '--save_param', dest='save_param', action='store_true', default=False,
+        help="Save the parameters of TRF to disk for future use."
     )
-    parser.add_argument(
-        '-b','--bin_width', dest='bin_width', type= int, action='store', default=50,
-        help="Specify the bin_width to use for analysis."
-    )
-    parser.add_argument(
-        '-n','--non_linearity', dest='non_linearity', 
-        action='store_true', default=False,
-        help="Use non-linearity after the linear model."
-    )
-    parser.add_argument(
-        '-v','--mVocs', dest='mVocs', action='store_true', default=False,
-        help="Specify if spikes for mVocs are to be used."
-    )
-    parser.add_argument(
-        '--mel', dest='mel_spectrogram', action='store_true', default=False,
-        help="Specify if mel_spectrogram to be used as baseline."
-    )
-    parser.add_argument(
-        '--type', dest='spectrogram_type', type= str, action='store',
-        help="Specify the type of spectrogram to be used as baseline."
-    )
-    
     return parser
 
 

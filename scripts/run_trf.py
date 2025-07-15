@@ -227,7 +227,7 @@ def get_parser():
     )
     parser.add_argument(
         '-s','--shuffle', dest='shuffled', action='store_true', default=False,
-        help="Specify if shuffled network to be used."
+        help="Specify if shuffled (untrained) network to be used."
     )
     parser.add_argument(
         '-v','--mVocs', dest='mVocs', action='store_true', default=False,

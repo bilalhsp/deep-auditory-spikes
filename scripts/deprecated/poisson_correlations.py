@@ -44,8 +44,6 @@ R_short_trials = r_split(X1, X2, N_repeats, N_tokens)
 R_long_trials = r_split(X1, X2, N_repeats, 1)
 R_super_long = r_split(X1, X2, 1, 1)
 
-# plt.hist(R_a, alpha=0.5)
-# plt.hist(R_b, alpha=0.5)
 
 print('rho: %.3f' % rho)
 print('MSE: %0.3g' % MSE(R_short_trials))
