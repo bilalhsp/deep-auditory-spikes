@@ -1,14 +1,10 @@
-
-
-from scipy import io
-import numpy as np
-import json
 import os
+import numpy as np
+from scipy import io
 import matplotlib.pyplot as plt
 
 import auditory_cortex.utils as utils
 from auditory_cortex import neural_data_dir, NEURAL_DATASETS
-# from auditory_cortex.neural_data.neural_meta_data import NeuralMetaData
 from .ucsf_metadata import UCSFMetaData
 from ..base_dataset import BaseDataset, register_dataset
 import logging
@@ -29,15 +25,16 @@ class UCSFDataset(BaseDataset):
         self.sub = str(int(sub))
         self.dataset_name = DATASET_NAME
         if data_dir is None:
-            data_dir = os.path.join(neural_data_dir, self.dataset_name)
+            data_dir = neural_data_dir / self.dataset_name
         self.session_id = self.sub
         self.data_dir = data_dir
-        self.sentences = io.loadmat(os.path.join(self.data_dir, mat_file), struct_as_record = False, squeeze_me = True, )
+        self.stimuli_dir = self.data_dir / 'stimuli'
+        self.sentences = io.loadmat(self.stimuli_dir / mat_file, struct_as_record = False, squeeze_me = True, )
         self.features = self.sentences['features']
         self.phn_names = self.sentences['phnnames']
         self.sentdet = self.sentences['sentdet']
         self.fs = self.sentdet[0].soundf   #since fs is the same for all sentences, using fs for the first sentence
-        self.names = os.listdir(os.path.join(self.data_dir, self.sub)) 
+        self.names = os.listdir(self.data_dir / 'sessions' / self.sub) 
         # print(self.names)
         self.spikes, self.trials = self.load_data(verbose=verbose)
         self.num_channels = len(self.spikes.keys())
@@ -103,15 +100,12 @@ class UCSFDataset(BaseDataset):
 
     def load_data(self, verbose):
         """ Loads data from __MUspk.mat files and returns a tuple of dictionaries. 
-        Takes in the path of directory having the __MUspk.mat files and json file 
-        with filenames to load. 
-        'dir: (string) address of location with __MUspk.mat files
-        'j_file': (string) json file with names of __Muspk.mat files to load
+
         Returns:
         (spikes, trials): 1st carries dictionary of spike structs read from __MUspk files
         and second one carries dictionary of trial structs.
         """
-        path = os.path.join(self.data_dir, self.sub)
+        path = self.data_dir / 'sessions' / self.sub
         spikes = {}
         trials = {}
         data = {}
@@ -540,7 +534,6 @@ class UCSFDataset(BaseDataset):
         #sents = [12,13,32,43,56,163,212,218,287,308]
         spikes = {}
         max_time = 0
-        #fig = plt.figure(figsize=(12,6))
         trials = self.get_trials(sent=sent)
         for i, tr in enumerate(trials):
             spikes[i] = self.retrieve_spike_times(sent=sent, trial=tr)[ch]
