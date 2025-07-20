@@ -14,8 +14,6 @@ This repository provides the code used to model and analyze spiking activity in 
 The neural dataset used in this project is publicly available on Zenodo:  
 🔗 [Click here to access the dataset](https://doi.org/10.5281/zenodo.16175377)
 
-> If you use this dataset, please make sure to cite it appropriately. See the [🔗 Citation](#-citation) section below.
-
 
 ## 📂 Repository Structure
 
