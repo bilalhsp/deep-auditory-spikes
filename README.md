@@ -1,12 +1,20 @@
 # Deep neural networks explain spiking activity in auditory cortex
 
 > 📘 This is the **official implementation** for:  
-> Bilal Ahmed et al., 2024
+> Bilal Ahmed et al., 2025
 > [📄 Read the paper](https://www.biorxiv.org/content/10.1101/2024.11.12.623280v1)
 
 ## Overview
 This repository provides the code used to model and analyze spiking activity in the auditory cortex using deep neural networks...
 
+![Schematic overview](./assets/schematic.png)
+
+## 📂 Dataset
+
+The neural dataset used in this project is publicly available on Zenodo:  
+🔗 [Click here to access the dataset](https://doi.org/10.5281/zenodo.16175377)
+
+> If you use this dataset, please make sure to cite it appropriately. See the [🔗 Citation](#-citation) section below.
 
 
 ## 📂 Repository Structure
@@ -14,7 +22,7 @@ This repository provides the code used to model and analyze spiking activity in 
 The repository is organized as follows:
 
 ```
-auditory_cortex/
+deep-auditory-spikes/
 ├── auditory_cortex/             ← Core project code
 │   ├── dnn_feature_extractor/   ← Extracts features from pretrained DNNs
 │   ├── neural_data/             ← Loads and preprocesses neural recordings
@@ -78,6 +86,20 @@ cache_dir: /path/to/feature/cache/
 > ⚠️ Make sure all the directories exist and are accessible before running the code.
 > You can customize the provided file as needed.
 
+## 🚀 Usage
+
+The best way to get started is by exploring the example notebooks:
+
+| Notebook | Description |
+|----------|-------------|
+| [`examples/1_neural_datasets.ipynb`](./examples/1_neural_datasets.ipynb) | Use neural dataset and metadata objects |
+| [`examples/2_features_extractor.ipynb`](./examples/2_features_extractor.ipynb) | Use feature extractor objects to get DNN features |
+| [`examples/3_dataloader.ipynb`](./examples/3_dataloader.ipynb) | Work with dataloader object (a unified interface to DNN features and neural data) |
+| [`examples/4_data_assembler.ipynb`](./examples/4_data_assembler.ipynb) | Prepare training and test data |
+
+> 💡 **Tip**: Make sure to first configure your environment using the `config.yml` file as described above.
+
+
 ## 📊 Plotting Correlation Results
 
 Download the precomputed correlation results archive:
@@ -94,5 +116,16 @@ tar -xzf /path/to/ahmed-25-corr-results.tar.gz
 This will create the `ahmed-25` subdirectory with the correlation results.
 
 Finally, run the plotting notebooks located in the `notebooks/` directory to generate the figures from these results.
+
+## 🔗 Citation
+
+If you use this codebase or build on the methods in this project, please cite the following paper:
+
+> **Ahmed, B. et al. (2025).**  
+> *Deep Neural Networks Explain Spiking Activity in Auditory Cortex.*  
+> _PLOS Computational Biology_ (In press).
+
+
+
 
 
